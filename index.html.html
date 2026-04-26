@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mellon AI — Stop Answering the Same Questions</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00FF88;
+    --lime: #D4FF00;
+    --orange: #FF5C00;
+    --yellow: #FFE500;
+    --pink: #FF3CAC;
+    --dark: #080808;
+    --card: #101010;
+    --card2: #141414;
+    --text: #F5F5F5;
+    --muted: #666;
+    --border: #1c1c1c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* CURSOR GLOW */
+  .cursor-glow {
+    position: fixed;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,136,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    transform: translate(-50%, -50%);
+    transition: all 0.1s ease;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: rgba(10,10,10,0.9);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 60px;
+    width: calc(100% - 40px);
+    max-width: 1100px;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .nav-link:hover { color: var(--text); }
+
+  .nav-cta {
+    background: var(--green);
+    color: var(--dark);
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .nav-cta:hover {
+    background: var(--lime);
+    transform: scale(1.04);
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 140px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-noise {
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hero-glow-2 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,92,0,0.04) 0%, transparent 70%);
+    top: 30%;
+    right: 10%;
+    pointer-events: none;
+  }
+
+  .floating-melons {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .fm {
+    position: absolute;
+    font-size: 3rem;
+    opacity: 0.08;
+    animation: floatMelon var(--dur, 8s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+  }
+
+  .fm:nth-child(1) { top: 12%; left: 6%; --dur: 7s; --delay: 0s; font-size: 2.5rem; }
+  .fm:nth-child(2) { top: 20%; right: 8%; --dur: 9s; --delay: 1s; font-size: 4rem; }
+  .fm:nth-child(3) { bottom: 25%; left: 10%; --dur: 6s; --delay: 2s; font-size: 2rem; }
+  .fm:nth-child(4) { bottom: 15%; right: 12%; --dur: 8s; --delay: 3s; font-size: 3.5rem; }
+  .fm:nth-child(5) { top: 50%; left: 3%; --dur: 10s; --delay: 1.5s; font-size: 1.8rem; }
+  .fm:nth-child(6) { top: 40%; right: 4%; --dur: 7s; --delay: 0.5s; font-size: 2.2rem; }
+
+  @keyframes floatMelon {
+    0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+    33% { transform: translateY(-25px) rotate(8deg) scale(1.05); }
+    66% { transform: translateY(-10px) rotate(-5deg) scale(0.98); }
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-size: 0.82rem;
+    color: var(--green);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 36px;
+    position: relative;
+    animation: fadeUp 0.7s ease both;
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: livePulse 2s infinite;
+  }
+
+  @keyframes livePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 12vw, 9rem);
+    line-height: 0.95;
+    letter-spacing: 2px;
+    margin-bottom: 28px;
+    position: relative;
+    animation: fadeUp 0.7s ease 0.1s both;
+  }
+
+  .hero h1 .line1 { color: var(--text); display: block; }
+  .hero h1 .line2 { color: var(--green); display: block; }
+  .hero h1 .line3 { color: var(--text); display: block; }
+  .hero h1 .line4 { color: var(--orange); display: block; }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.75;
+    margin-bottom: 52px;
+    font-weight: 400;
+    position: relative;
+    animation: fadeUp 0.7s ease 0.2s both;
+  }
+
+  .hero-sub strong { color: var(--text); font-weight: 600; }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    animation: fadeUp 0.7s ease 0.3s both;
+  }
+
+  .btn-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--green);
+    color: var(--dark);
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 18px 36px;
+    border-radius: 60px;
+    text-decoration: none;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-main::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .btn-main:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 48px rgba(0,255,136,0.35);
+    background: var(--lime);
+  }
+
+  .btn-main:hover::after { opacity: 1; }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: transparent;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 18px 36px;
+    border-radius: 60px;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: all 0.25s;
+  }
+
+  .btn-ghost:hover {
+    border-color: rgba(0,255,136,0.4);
+    color: var(--green);
+    transform: translateY(-3px);
+  }
+
+  /* PAIN SECTION */
+  .pain {
+    padding: 100px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .pain h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .pain p {
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 60px;
+  }
+
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .pain-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    text-align: left;
+    transition: all 0.3s;
+  }
+
+  .pain-item:hover {
+    border-color: rgba(255,92,0,0.3);
+    transform: translateY(-4px);
+  }
+
+  .pain-emoji { font-size: 2rem; margin-bottom: 14px; display: block; }
+
+  .pain-item h3 {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .pain-item p {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+
+  /* DEMO SECTION */
+  .demo {
+    padding: 60px 24px 100px;
+  }
+
+  .demo-inner {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    padding: 64px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .demo-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), var(--lime), var(--orange), transparent);
+  }
+
+  .demo-melon-big {
+    font-size: 5rem;
+    display: block;
+    margin-bottom: 24px;
+    animation: mBounce 3s ease-in-out infinite;
+  }
+
+  @keyframes mBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(5deg); }
+  }
+
+  .demo-inner h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+
+  .demo-inner p {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 44px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .phone-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--dark);
+    border: 2px solid var(--green);
+    border-radius: 24px;
+    padding: 20px 36px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+    text-decoration: none;
+  }
+
+  .phone-pill:hover {
+    box-shadow: 0 0 40px rgba(0,255,136,0.2);
+    transform: scale(1.02);
+  }
+
+  .phone-ring {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    animation: phoneRing 4s ease-in-out infinite;
+  }
+
+  @keyframes phoneRing {
+    0%, 100% { transform: rotate(0deg); }
+    5% { transform: rotate(-20deg); }
+    10% { transform: rotate(20deg); }
+    15% { transform: rotate(-15deg); }
+    20% { transform: rotate(15deg); }
+    25% { transform: rotate(0deg); }
+  }
+
+  .phone-text { text-align: left; }
+
+  .phone-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .phone-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 3px;
+    color: var(--green);
+  }
+
+  .demo-hint {
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  /* FEATURES */
+  .features {
+    padding: 100px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--green);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 60px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+  }
+
+  .feat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 36px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feat:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0,255,136,0.2);
+  }
+
+  .feat.wide { grid-column: span 8; }
+  .feat.narrow { grid-column: span 4; }
+  .feat.half { grid-column: span 6; }
+  .feat.third { grid-column: span 4; }
+
+  .feat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .feat h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .feat p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .feat-tag {
+    display: inline-block;
+    background: rgba(0,255,136,0.08);
+    color: var(--green);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 50px;
+    margin-top: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  /* HOW IT WORKS */
+  .how {
+    padding: 100px 24px;
+    background: #0c0c0c;
+  }
+
+  .how-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0;
+    margin-top: 60px;
+    position: relative;
+  }
+
+  .how-grid::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), var(--orange), var(--yellow), transparent);
+  }
+
+  .how-step {
+    padding: 0 24px;
+    text-align: center;
+  }
+
+  .how-num {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--dark);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--green);
+    margin: 0 auto 24px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s;
+  }
+
+  .how-step:nth-child(2) .how-num { color: var(--orange); border-color: rgba(255,92,0,0.3); }
+  .how-step:nth-child(3) .how-num { color: var(--yellow); border-color: rgba(255,229,0,0.3); }
+  .how-step:nth-child(4) .how-num { color: var(--lime); border-color: rgba(212,255,0,0.3); }
+
+  .how-step:hover .how-num { transform: scale(1.1); }
+
+  .how-step h3 {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+
+  .how-step p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  /* PRICING */
+  .pricing {
+    padding: 100px 24px;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .pricing-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    overflow: hidden;
+    margin-top: 60px;
+  }
+
+  .pricing-top {
+    padding: 60px 48px 48px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .pricing-top::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--lime));
+  }
+
+  .price-badge {
+    display: inline-block;
+    background: rgba(0,255,136,0.1);
+    color: var(--green);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    border-radius: 50px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(0,255,136,0.2);
+  }
+
+  .price-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(5rem, 12vw, 8rem);
+    letter-spacing: 2px;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .price-desc {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
+
+  .pricing-bottom {
+    padding: 48px;
+  }
+
+  .price-per-min {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: rgba(255,92,0,0.06);
+    border: 1px solid rgba(255,92,0,0.15);
+    border-radius: 16px;
+    padding: 20px 32px;
+    margin-bottom: 40px;
+  }
+
+  .price-per-min-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: var(--orange);
+    letter-spacing: 2px;
+  }
+
+  .price-per-min-text {
+    text-align: left;
+  }
+
+  .price-per-min-text strong {
+    display: block;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .price-per-min-text span {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .price-features {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 40px;
+    text-align: left;
+  }
+
+  .price-features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+  }
+
+  .price-features li::before {
+    content: '✓';
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0,255,136,0.1);
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  /* NICHES */
+  .niches {
+    padding: 100px 24px;
+    background: #0c0c0c;
+  }
+
+  .niches-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .niche-scroll {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 40px;
+  }
+
+  .niche-pill {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+
+  .niche-pill:hover {
+    border-color: var(--green);
+    color: var(--green);
+    transform: scale(1.04);
+  }
+
+  /* CTA */
+  .cta {
+    padding: 120px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(0,255,136,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-melons {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .cta-melon {
+    position: absolute;
+    font-size: 5rem;
+    opacity: 0.06;
+    animation: floatMelon 8s ease-in-out infinite;
+  }
+
+  .cta-melon:nth-child(1) { top: 10%; left: 5%; animation-delay: 0s; }
+  .cta-melon:nth-child(2) { top: 20%; right: 8%; animation-delay: 2s; font-size: 7rem; }
+  .cta-melon:nth-child(3) { bottom: 15%; left: 8%; animation-delay: 4s; font-size: 4rem; }
+  .cta-melon:nth-child(4) { bottom: 20%; right: 5%; animation-delay: 1s; font-size: 6rem; }
+
+  .cta h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 7rem);
+    letter-spacing: 3px;
+    line-height: 0.95;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .cta p {
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin-bottom: 48px;
+    position: relative;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  footer p {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .feat.wide, .feat.narrow, .feat.half, .feat.third {
+      grid-column: span 12;
+    }
+    .how-grid::before { display: none; }
+    .price-features { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 12px 16px; width: calc(100% - 24px); }
+    .nav-link { display: none; }
+    .phone-pill { flex-direction: column; padding: 20px 24px; }
+    .phone-text { text-align: center; }
+    footer { flex-direction: column; text-align: center; padding: 24px; }
+    .pricing-top, .pricing-bottom { padding: 32px 24px; }
+    .price-per-min { flex-direction: column; text-align: center; }
+    .price-per-min-text { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">🍈 Mellon AI</div>
+  <div class="nav-right">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#pricing" class="nav-link">Pricing</a>
+    <a href="tel:9297997438" class="nav-cta">📞 Try Demo</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-noise"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+
+  <div class="floating-melons">
+    <div class="fm">🍈</div>
+    <div class="fm">🍉</div>
+    <div class="fm">🍈</div>
+    <div class="fm">🍉</div>
+    <div class="fm">🍈</div>
+    <div class="fm">🍉</div>
+  </div>
+
+  <div class="hero-eyebrow">
+    <div class="live-dot"></div>
+    AI Receptionist — Live 24/7
+  </div>
+
+  <h1>
+    <span class="line1">TIRED OF</span>
+    <span class="line2">ANSWERING</span>
+    <span class="line3">THE SAME</span>
+    <span class="line4">QUESTIONS?</span>
+  </h1>
+
+  <p class="hero-sub">
+    Your customers repeat themselves. You repeat yourself. <strong>It never ends.</strong> We build an AI receptionist that handles every call — repetitive questions, missed calls, after hours inquiries — so you never have to again.
+  </p>
+
+  <div class="hero-actions">
+    <a href="tel:9297997438" class="btn-main">
+      📞 Call the AI Now
+    </a>
+    <a href="#pricing" class="btn-ghost">
+      💰 See Pricing
+    </a>
+  </div>
+</section>
+
+<!-- PAIN POINTS -->
+<section class="pain">
+  <h2>SOUND <span style="color:var(--orange)">FAMILIAR?</span></h2>
+  <p>Every day, growing businesses lose time and money to the same avoidable problems.</p>
+
+  <div class="pain-grid">
+    <div class="pain-item">
+      <span class="pain-emoji">🔁</span>
+      <h3>"What are your hours?"</h3>
+      <p>You've answered this ten times today. And ten times yesterday. And you'll answer it ten times tomorrow.</p>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">📵</span>
+      <h3>Missed calls = missed money</h3>
+      <p>You're with a client. The phone rings. No one answers. That lead calls your competitor instead.</p>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">🌙</span>
+      <h3>After hours inquiries</h3>
+      <p>People call at 9 PM. You're done for the day. They leave no voicemail and you never hear from them again.</p>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">😤</span>
+      <h3>Unqualified time-wasters</h3>
+      <p>You spend 20 minutes on a call only to find out they're not even close to your ideal customer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo">
+  <div class="demo-inner">
+    <span class="demo-melon-big">🍈</span>
+    <h2>HEAR YOUR FUTURE AI<br>RIGHT NOW</h2>
+    <p>Call this number and experience it live. This IS the AI — exactly what your customers will hear when they call your business.</p>
+
+    <a href="tel:9297997438" class="phone-pill">
+      <div class="phone-ring">📞</div>
+      <div class="phone-text">
+        <div class="phone-label">Call the live demo</div>
+        <div class="phone-num">(929) 799-7438</div>
+      </div>
+    </a>
+
+    <p class="demo-hint">🍉 Go ahead — it's waiting for you right now</p>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-eyebrow">What We Build</div>
+  <h2 class="section-title">EVERYTHING YOUR<br><span style="color:var(--green)">RECEPTIONIST</span><br>SHOULD DO.</h2>
+
+  <div class="features-grid">
+    <div class="feat wide">
+      <span class="feat-icon">📞</span>
+      <h3>Answer Every Single Call</h3>
+      <p>24 hours a day, 7 days a week, 365 days a year. Your AI never sleeps, never takes a break, never puts someone on hold. Every call answered, every lead captured.</p>
+      <span class="feat-tag">Always On</span>
+    </div>
+    <div class="feat narrow">
+      <span class="feat-icon">🔀</span>
+      <h3>Transfer Hot Leads</h3>
+      <p>When someone is ready to buy, the AI transfers them directly to you — warm and qualified.</p>
+      <span class="feat-tag">Live Transfer</span>
+    </div>
+    <div class="feat half">
+      <span class="feat-icon">📲</span>
+      <h3>Instant Text Alerts</h3>
+      <p>Every time a hot lead calls, you get a text with their name, what they need, and how interested they are. Never miss a hot lead again.</p>
+      <span class="feat-tag">SMS Alerts</span>
+    </div>
+    <div class="feat half">
+      <span class="feat-icon">📅</span>
+      <h3>Book Appointments</h3>
+      <p>The AI books directly into your calendar. Your schedule fills itself while you focus on your actual work.</p>
+      <span class="feat-tag">Auto-Booking</span>
+    </div>
+    <div class="feat third">
+      <span class="feat-icon">🎯</span>
+      <h3>Qualify Leads</h3>
+      <p>Filter out time-wasters. Only pass you the prospects worth your time.</p>
+    </div>
+    <div class="feat third">
+      <span class="feat-icon">🗣️</span>
+      <h3>Answer FAQs</h3>
+      <p>Hours, pricing, location, services — your AI handles the repetitive questions all day long.</p>
+    </div>
+    <div class="feat third">
+      <span class="feat-icon">🍈</span>
+      <h3>100% Custom Built</h3>
+      <p>Built from scratch for your business. Your voice, your script, your rules.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="how-inner">
+    <div class="section-eyebrow">The Process</div>
+    <h2 class="section-title">UP AND RUNNING<br><span style="color:var(--green)">IN 48 HOURS.</span></h2>
+
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h3>Call the Demo</h3>
+        <p>Experience the AI yourself at (929) 799-7438. When you're ready, we move forward.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h3>We Build It</h3>
+        <p>We learn your business, write your script, and build your custom AI from scratch.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h3>We Test Everything</h3>
+        <p>Every scenario tested. Every call type covered. You approve it before it goes live.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <h3>Never Miss a Call</h3>
+        <p>Your AI goes live. Every call answered. Every lead captured. Every day.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-eyebrow">Simple Pricing</div>
+  <h2 class="section-title">NO SUBSCRIPTIONS.<br><span style="color:var(--green)">NO SURPRISES.</span></h2>
+
+  <div class="pricing-wrap">
+    <div class="pricing-top">
+      <div class="price-badge">One Time Setup Fee</div>
+      <div class="price-amount">$450</div>
+      <p class="price-desc">Complete custom AI build — delivered and ready to deploy in 48 to 72 hours</p>
+    </div>
+
+    <div class="pricing-bottom">
+      <div class="price-per-min">
+        <div class="price-per-min-num">12.5¢</div>
+        <div class="price-per-min-text">
+          <strong>Per minute — paid directly on the platform</strong>
+          <span>Only when the AI is actively talking to your customers. No monthly fees to us. No contracts.</span>
+        </div>
+      </div>
+
+      <ul class="price-features">
+        <li>Custom script for your business</li>
+        <li>Your own phone number</li>
+        <li>Live call transfer</li>
+        <li>Instant SMS alerts</li>
+        <li>Appointment booking</li>
+        <li>Voicemail handling</li>
+        <li>Delivered in 48 to 72 hours</li>
+        <li>No contracts ever</li>
+      </ul>
+
+      <a href="tel:9297997438" class="btn-main" style="width:100%; justify-content:center; font-size:1.1rem; padding:20px;">
+        📞 Call Now to Get Started
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- NICHES -->
+<section class="niches">
+  <div class="niches-inner">
+    <div class="section-eyebrow">Who We Work With</div>
+    <h2 class="section-title">ANY BUSINESS THAT<br><span style="color:var(--green)">GETS PHONE CALLS.</span></h2>
+
+    <div class="niche-scroll">
+      <div class="niche-pill">🦷 Dental Offices</div>
+      <div class="niche-pill">🏠 Real Estate Agents</div>
+      <div class="niche-pill">⚖️ Law Firms</div>
+      <div class="niche-pill">🔧 Plumbers & HVAC</div>
+      <div class="niche-pill">💆 Med Spas</div>
+      <div class="niche-pill">🏗️ Contractors</div>
+      <div class="niche-pill">🚗 Auto Dealers</div>
+      <div class="niche-pill">💰 Financial Services</div>
+      <div class="niche-pill">🏥 Medical Clinics</div>
+      <div class="niche-pill">🍕 Restaurants</div>
+      <div class="niche-pill">💪 Gyms & Fitness</div>
+      <div class="niche-pill">🎓 Education & Tutoring</div>
+      <div class="niche-pill">🌿 Landscaping</div>
+      <div class="niche-pill">🐾 Vet Clinics</div>
+      <div class="niche-pill">🍈 Any Business</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="cta-glow"></div>
+  <div class="cta-melons">
+    <div class="cta-melon">🍈</div>
+    <div class="cta-melon">🍉</div>
+    <div class="cta-melon">🍈</div>
+    <div class="cta-melon">🍉</div>
+  </div>
+
+  <h2>
+    DONE ANSWERING<br>
+    THE SAME <span style="color:var(--green)">QUESTIONS?</span>
+  </h2>
+  <p>Call the demo right now. Hear exactly what your customers will experience. Then let's build yours.</p>
+
+  <a href="tel:9297997438" class="btn-main" style="font-size:1.15rem; padding:22px 52px;">
+    📞 (929) 799-7438 — Call Now
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🍈 MELLON AI</div>
+  <p>© 2026 Mellon AI. All rights reserved.</p>
+  <p style="color:#333;">Built with 🍈 in Brooklyn, NY</p>
+</footer>
+
+<script>
+  // Cursor glow effect
+  const glow = document.getElementById('cursorGlow');
+  document.addEventListener('mousemove', (e) => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+  });
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>
